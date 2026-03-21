@@ -248,48 +248,112 @@
     
     <!-- API Modal -->
     <div class="modal-overlay" id="apiModal">
-        <div class="modal">
+        <div class="modal api-modal">
             <div class="modal-header">
-                <h2 class="modal-title">API 接入</h2>
+                <h2 class="modal-title">🔑 API 接入</h2>
                 <button class="modal-close" onclick="alphaAI.closeModal('apiModal')">✕</button>
             </div>
             <div class="modal-body">
-                <p style="color: var(--text-secondary);">使用您的专属 Token 接入 LensX API</p>
-                
-                <div class="token-display">
-                    <div class="token-label">您的 API Token</div>
-                    <div class="token-value" id="tokenDisplay">请先登录获取 Token</div>
-                    <button class="copy-btn" onclick="alphaAI.copyToken()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                        </svg>
-                        复制 Token
-                    </button>
+                <!-- Login Required State -->
+                <div id="apiNotLoggedIn" style="display: none;">
+                    <div class="api-not-logged-in">
+                        <div class="not-logged-icon">🔐</div>
+                        <p class="not-logged-text">请先登录以获取您的 API Token</p>
+                        <button class="form-btn" onclick="alphaAI.closeModal('apiModal'); alphaAI.openLogin();">登录 / 注册</button>
+                    </div>
                 </div>
                 
-                <div class="api-docs">
-                    <div class="api-docs-title">OpenAI 兼容配置示例</div>
-                    <pre><code>{
-  "baseUrl": "https://api.lensx.com/v1/",
-  "apiKey": "lens_xxxxxxxxxxxxxxxx",
-  "models": [
-    {"id": "deepseek/deepseek-chat-v3-0324", "name": "DeepSeek V3"},
-    {"id": "x-ai/grok-4", "name": "Grok 4"},
-    {"id": "anthropic/claude-3.5-sonnet", "name": "Claude 3.5 Sonnet"}
-  ]
-}</code></pre>
-                </div>
-                
-                <div class="api-docs" style="margin-top: 16px;">
-                    <div class="api-docs-title">cURL 调用示例</div>
-                    <pre><code>curl https://api.lensx.com/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "deepseek/deepseek-chat-v3-0324",
-    "messages": [{"role": "user", "content": "Hello"}]
-  }'</code></pre>
+                <!-- Logged In State -->
+                <div id="apiLoggedIn" style="display: none;">
+                    <p class="api-intro">使用您的专属 Token 接入 LensX API，支持 OpenAI 兼容格式。</p>
+                    
+                    <!-- Token Display Card -->
+                    <div class="api-token-card">
+                        <div class="api-token-header">
+                            <span class="api-token-label">您的 API Token</span>
+                            <span class="api-token-badge">永久有效</span>
+                        </div>
+                        <div class="api-token-row">
+                            <div class="api-token-value-wrapper">
+                                <code class="api-token-value" id="apiTokenValue">lens_xxxxxxxxxxxxxxxx</code>
+                            </div>
+                            <div class="api-token-actions">
+                                <button class="api-action-btn" id="toggleTokenVisibility" onclick="alphaAI.toggleApiTokenVisibility()" title="显示/隐藏">
+                                    <svg class="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                    <svg class="eye-off-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
+                                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                                    </svg>
+                                </button>
+                                <button class="api-action-btn primary" onclick="alphaAI.copyApiToken()" title="复制">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                    </svg>
+                                    <span>复制</span>
+                                </button>
+                            </div>
+                        </div>
+                        <button class="regenerate-btn" onclick="alphaAI.regenerateApiToken()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 4 23 10 17 10"></polyline>
+                                <polyline points="1 20 1 14 7 14"></polyline>
+                                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                            </svg>
+                            重新生成 Token
+                        </button>
+                    </div>
+                    
+                    <!-- Quick Copy Section -->
+                    <div class="api-quick-copy">
+                        <div class="quick-copy-header">
+                            <span>快速复制</span>
+                        </div>
+                        <div class="quick-copy-items">
+                            <button class="quick-copy-item" onclick="alphaAI.copyQuick('python')">
+                                <span class="lang-icon">🐍</span>
+                                <span>Python</span>
+                            </button>
+                            <button class="quick-copy-item" onclick="alphaAI.copyQuick('javascript')">
+                                <span class="lang-icon">📜</span>
+                                <span>JavaScript</span>
+                            </button>
+                            <button class="quick-copy-item" onclick="alphaAI.copyQuick('curl')">
+                                <span class="lang-icon">⌨️</span>
+                                <span>cURL</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Configuration Examples -->
+                    <div class="api-examples">
+                        <div class="api-example-tabs">
+                            <button class="tab-btn active" onclick="alphaAI.switchApiTab('python')">Python</button>
+                            <button class="tab-btn" onclick="alphaAI.switchApiTab('javascript')">JavaScript</button>
+                            <button class="tab-btn" onclick="alphaAI.switchApiTab('curl')">cURL</button>
+                        </div>
+                        <div class="api-example-content" id="apiExampleContent">
+                            <!-- Content will be rendered by JS -->
+                        </div>
+                    </div>
+                    
+                    <!-- Models List -->
+                    <div class="api-models-info">
+                        <div class="models-info-header">
+                            <span>可用模型</span>
+                            <a href="#" class="models-link" onclick="alphaAI.openPlans(); return false;">升级套餐 →</a>
+                        </div>
+                        <div class="models-list" id="modelsList">
+                            <span class="model-tag free">DeepSeek V3</span>
+                            <span class="model-tag free">Llama 4</span>
+                            <span class="model-tag pro">Claude 3.5 Sonnet</span>
+                            <span class="model-tag pro">GPT-4o</span>
+                            <span class="model-tag pro">Grok 4</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
