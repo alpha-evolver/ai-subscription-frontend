@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Alpha AI - 智能对话助手">
+    <title>Alpha AI - 智能对话</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a href="#" class="logo" onclick="alphaAI.newChat(); return false;">
+                    <div class="logo-icon">α</div>
+                    <span class="logo-text">Alpha AI</span>
+                </a>
+                
+                <button class="new-chat-btn" onclick="alphaAI.newChat()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    新建对话
+                </button>
+            </div>
+            
+            <div class="chat-list" id="chatList">
+                <!-- Conversations will be rendered here -->
+            </div>
+            
+            <div class="sidebar-footer">
+                <div class="user-menu" onclick="alphaAI.openSettings()">
+                    <div class="user-avatar" id="userAvatar">?</div>
+                    <div class="user-info">
+                        <div class="user-name" id="userName">未登录</div>
+                        <div class="user-plan" id="userPlan">点击登录</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-left">
+                    <button class="mobile-menu-btn" id="mobileMenuBtn" onclick="alphaAI.toggleSidebar()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <h1 class="header-title" id="headerTitle">新对话</h1>
+                </div>
+                
+                <div class="header-actions">
+                    <button class="header-btn" onclick="alphaAI.openSettings()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        </svg>
+                        设置
+                    </button>
+                    <button class="header-btn" onclick="alphaAI.openAPI()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
+                        </svg>
+                        API
+                    </button>
+                </div>
+            </header>
+            
+            <!-- Chat Container -->
+            <div class="chat-container" id="chatContainer">
+                <!-- Welcome Screen -->
+                <div class="Welcome" id="welcomeScreen">
+                    <div class="welcome-icon">🤖</div>
+                    <h1 class="welcome-title">欢迎使用 Alpha AI</h1>
+                    <p class="welcome-subtitle">智能对话，触手可及</p>
+                    
+                    <div class="capabilities">
+                        <div class="capability-card" onclick="alphaAI.sendSuggestion('帮我写一篇关于AI的文章')">
+                            <div class="capability-icon">✍️</div>
+                            <div class="capability-title">写作助手</div>
+                            <div class="capability-desc">文章、邮件、报告各种写作</div>
+                        </div>
+                        <div class="capability-card" onclick="alphaAI.sendSuggestion('解释一下什么是机器学习')">
+                            <div class="capability-icon">📚</div>
+                            <div class="capability-title">学习辅导</div>
+                            <div class="capability-desc">解答问题，讲解知识</div>
+                        </div>
+                        <div class="capability-card" onclick="alphaAI.sendSuggestion('用Python写一个快速排序')">
+                            <div class="capability-icon">💻</div>
+                            <div class="capability-title">代码助手</div>
+                            <div class="capability-desc">编程问题，代码调试</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Input Area -->
+            <div class="input-area">
+                <div class="input-container">
+                    <div class="input-wrapper">
+                        <textarea 
+                            class="chat-input" 
+                            id="chatInput" 
+                            placeholder="输入消息..."
+                            rows="1"
+                        ></textarea>
+                        <button class="send-btn" id="sendBtn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="22" y1="2" x2="11" y2="13"></line>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <div class="input-footer">
+                        <div class="model-select">
+                            <select id="modelSelect">
+                                <!-- Options will be rendered by JS -->
+                            </select>
+                        </div>
+                        <div class="quota-info" id="quotaInfo">免费版 · 今日剩余 5 次</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Login Modal -->
+    <div class="modal-overlay" id="loginModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="loginTitle">登录 / 注册</h2>
+                <button class="modal-close" onclick="alphaAI.closeModal('loginModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="emailInput">邮箱</label>
+                    <input type="email" class="form-input" id="emailInput" placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="passwordInput">密码</label>
+                    <input type="password" class="form-input" id="passwordInput" placeholder="••••••••">
+                </div>
+                <button class="form-btn" id="loginBtn" onclick="alphaAI.handleAuth()">登录 / 注册</button>
+                <div class="form-link">
+                    <a onclick="alphaAI.toggleAuthMode()">切换到 <span id="authModeText">注册</span></a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">账户设置</h2>
+                <button class="modal-close" onclick="alphaAI.closeModal('settingsModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div id="loggedInContent" style="display: none;">
+                    <p style="margin-bottom: 16px;">当前登录: <strong id="settingsEmail"></strong></p>
+                    <button class="form-btn secondary" onclick="alphaAI.logout()">退出登录</button>
+                </div>
+                <div id="notLoggedInContent">
+                    <p style="margin-bottom: 16px; color: var(--text-secondary);">登录后可享受更多功能</p>
+                    <button class="form-btn" onclick="alphaAI.openLogin()">登录 / 注册</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- API Modal -->
+    <div class="modal-overlay" id="apiModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">API 接入</h2>
+                <button class="modal-close" onclick="alphaAI.closeModal('apiModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--text-secondary);">使用您的专属 Token 接入 Alpha API</p>
+                
+                <div class="token-display">
+                    <div class="token-label">您的 Token</div>
+                    <div class="token-value" id="tokenDisplay">请先登录获取 Token</div>
+                    <button class="copy-btn" onclick="alphaAI.copyToken()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                        复制 Token
+                    </button>
+                </div>
+                
+                <div class="api-docs">
+                    <div class="api-docs-title">接入示例 (OpenAI 兼容格式)</div>
+                    <pre><code>{
+  "provider": "alpha",
+  "baseUrl": "http://113.44.153.144",
+  "apiKey": "YOUR_TOKEN_HERE",
+  "api": "openai-completions",
+  "models": [
+    {"id": "x-ai/grok-4", "name": "Grok 4"}
+  ]
+}</code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+    
+    <!-- Puter SDK -->
+    <script src="https://js.puter.com/v2/"></script>
+    
+    <!-- App JS -->
+    <script src="js/app.js"></script>
+</body>
+</html>
