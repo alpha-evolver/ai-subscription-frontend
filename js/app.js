@@ -4,7 +4,7 @@
 
 class AlphaAI {
     constructor() {
-        this.API_BASE = 'http://113.44.153.144';
+        this.API_BASE = 'https://www.lensx.com.cn';
         this.currentUser = null;
         this.currentToken = localStorage.getItem('alpha_token');
         this.messages = [];
