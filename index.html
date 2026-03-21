@@ -191,10 +191,10 @@
                 <button class="modal-close" onclick="alphaAI.closeModal('apiModal')">✕</button>
             </div>
             <div class="modal-body">
-                <p style="color: var(--text-secondary);">使用您的专属 Token 接入 Alpha API</p>
+                <p style="color: var(--text-secondary);">使用您的专属 Token 接入 LensX API</p>
                 
                 <div class="token-display">
-                    <div class="token-label">您的 Token</div>
+                    <div class="token-label">您的 API Token</div>
                     <div class="token-value" id="tokenDisplay">请先登录获取 Token</div>
                     <button class="copy-btn" onclick="alphaAI.copyToken()">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -206,16 +206,27 @@
                 </div>
                 
                 <div class="api-docs">
-                    <div class="api-docs-title">接入示例 (OpenAI 兼容格式)</div>
+                    <div class="api-docs-title">OpenAI 兼容配置示例</div>
                     <pre><code>{
-  "provider": "alpha",
-  "baseUrl": "http://113.44.153.144",
-  "apiKey": "YOUR_TOKEN_HERE",
-  "api": "openai-completions",
+  "baseUrl": "https://api.lensx.com/v1/",
+  "apiKey": "lens_xxxxxxxxxxxxxxxx",
   "models": [
-    {"id": "x-ai/grok-4", "name": "Grok 4"}
+    {"id": "deepseek/deepseek-chat-v3-0324", "name": "DeepSeek V3"},
+    {"id": "x-ai/grok-4", "name": "Grok 4"},
+    {"id": "anthropic/claude-3.5-sonnet", "name": "Claude 3.5 Sonnet"}
   ]
 }</code></pre>
+                </div>
+                
+                <div class="api-docs" style="margin-top: 16px;">
+                    <div class="api-docs-title">cURL 调用示例</div>
+                    <pre><code>curl https://api.lensx.com/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "deepseek/deepseek-chat-v3-0324",
+    "messages": [{"role": "user", "content": "Hello"}]
+  }'</code></pre>
                 </div>
             </div>
         </div>
