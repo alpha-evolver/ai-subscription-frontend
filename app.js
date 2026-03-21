@@ -63,7 +63,11 @@ class AlphaAI {
             emailInput: document.getElementById('emailInput'),
             passwordInput: document.getElementById('passwordInput'),
             loginTitle: document.getElementById('loginTitle'),
+            loginSubtitle: document.getElementById('loginSubtitle'),
             loginBtn: document.getElementById('loginBtn'),
+            rememberMe: document.getElementById('rememberMe'),
+            passwordHint: document.getElementById('passwordHint'),
+            toggleLink: document.getElementById('toggleLink'),
             authModeText: document.getElementById('authModeText'),
             loggedInContent: document.getElementById('loggedInContent'),
             notLoggedInContent: document.getElementById('notLoggedInContent'),
@@ -71,6 +75,19 @@ class AlphaAI {
             tokenDisplay: document.getElementById('tokenDisplay'),
             toast: document.getElementById('toast')
         };
+        
+        // Load remembered email
+        const rememberedEmail = localStorage.getItem('remembered_email');
+        if (rememberedEmail && this.elements.emailInput) {
+            this.elements.emailInput.value = rememberedEmail;
+            if (this.elements.rememberMe) this.elements.rememberMe.checked = true;
+        }
+        
+        // Set initial password hint state
+        if (this.elements.passwordHint) {
+            this.elements.passwordHint.style.display = 'none';
+        }
+        
         this.renderModelOptions();
     }
     
@@ -85,6 +102,20 @@ class AlphaAI {
         this.elements.modelSelect.addEventListener('change', (e) => {
             this.selectedModel = e.target.value;
         });
+        
+        // Password strength
+        this.elements.passwordInput.addEventListener('input', (e) => {
+            this.updatePasswordStrength(e.target.value);
+        });
+        
+        // Enter key on login form
+        this.elements.emailInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.elements.passwordInput.focus();
+        });
+        this.elements.passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.handleAuth();
+        });
+        
         document.querySelectorAll('.modal-overlay').forEach(overlay => {
             overlay.addEventListener('click', (e) => {
                 if (e.target === overlay) overlay.classList.remove('active');
@@ -108,10 +139,28 @@ class AlphaAI {
     async handleAuth() {
         const email = this.elements.emailInput.value.trim();
         const password = this.elements.passwordInput.value;
-        if (!email || !password) { this.showToast('请填写邮箱和密码', 'error'); return; }
         
-        this.elements.loginBtn.disabled = true;
-        this.elements.loginBtn.textContent = '处理中...';
+        // Validation
+        if (!email) {
+            this.showLoginError('请输入邮箱地址');
+            return;
+        }
+        if (!this.isValidEmail(email)) {
+            this.showLoginError('请输入有效的邮箱地址');
+            return;
+        }
+        if (!password) {
+            this.showLoginError('请输入密码');
+            return;
+        }
+        if (this.authMode === 'register' && password.length < 6) {
+            this.showLoginError('密码至少需要6位字符');
+            return;
+        }
+        
+        // Set loading state
+        this.setLoginLoading(true);
+        this.hideLoginError();
         
         try {
             const endpoint = this.authMode === 'login' ? '/api/login' : '/api/register';
@@ -124,21 +173,36 @@ class AlphaAI {
             
             if (response.ok) {
                 this.currentToken = data.token;
-                this.currentApiToken = data.apiToken;  // 保存API Token
+                this.currentApiToken = data.apiToken;
                 this.currentUser = { email };
                 localStorage.setItem('alpha_token', this.currentToken);
-                localStorage.setItem('alpha_api_token', this.currentApiToken);  // 持久化API Token
+                localStorage.setItem('alpha_api_token', this.currentApiToken);
+                
+                // Remember email if checked
+                if (this.elements.rememberMe?.checked) {
+                    localStorage.setItem('remembered_email', email);
+                }
+                
                 this.updateUserUI();
                 this.closeModal('loginModal');
-                this.showToast(this.authMode === 'login' ? '登录成功' : '注册成功', 'success');
+                
+                // Show success with API token if registration
+                if (this.authMode === 'register') {
+                    this.showToast('注册成功！您的API Token已生成', 'success');
+                    // Open API modal to show token
+                    setTimeout(() => this.openAPI(), 500);
+                } else {
+                    this.showToast('登录成功', 'success');
+                }
+                
                 await this.refreshQuota();
             } else {
-                this.showToast(data.error || '操作失败', 'error');
+                this.showLoginError(data.error || '操作失败，请重试');
             }
-        } catch (e) { this.showToast('网络错误，请重试', 'error'); }
-        finally {
-            this.elements.loginBtn.disabled = false;
-            this.elements.loginBtn.textContent = this.authMode === 'login' ? '登录' : '注册';
+        } catch (e) {
+            this.showLoginError('网络错误，请检查网络连接后重试');
+        } finally {
+            this.setLoginLoading(false);
         }
     }
     
@@ -155,9 +219,102 @@ class AlphaAI {
     
     toggleAuthMode() {
         this.authMode = this.authMode === 'login' ? 'register' : 'login';
-        this.elements.loginTitle.textContent = this.authMode === 'login' ? '登录' : '注册';
-        this.elements.loginBtn.textContent = this.authMode === 'login' ? '登录' : '注册';
-        this.elements.authModeText.textContent = this.authMode === 'login' ? '注册' : '登录';
+        
+        // Update UI
+        const isRegister = this.authMode === 'register';
+        this.elements.loginTitle.textContent = isRegister ? '创建账户' : '欢迎回来';
+        this.elements.loginSubtitle.textContent = isRegister ? '注册以开始使用AI服务' : '登录您的账户以继续';
+        this.elements.loginBtn.querySelector('.btn-text').textContent = isRegister ? '注册' : '登录';
+        this.elements.toggleLink.textContent = isRegister ? '立即注册' : '立即登录';
+        this.elements.toggleLink.parentElement.innerHTML = isRegister 
+            ? '还没有账户? <a onclick="alphaAI.toggleAuthMode()">立即注册</a>'
+            : '已有账户? <a onclick="alphaAI.toggleAuthMode()">立即登录</a>';
+        
+        // Update hints
+        if (isRegister) {
+            this.elements.passwordHint.style.display = 'inline';
+        } else {
+            this.elements.passwordHint.style.display = 'none';
+        }
+        
+        this.hideLoginError();
+    }
+    
+    // Password visibility toggle
+    togglePassword() {
+        const input = this.elements.passwordInput;
+        const eyeOpen = document.querySelector('.eye-open');
+        const eyeClosed = document.querySelector('.eye-closed');
+        
+        if (input.type === 'password') {
+            input.type = 'text';
+            eyeOpen.style.display = 'none';
+            eyeClosed.style.display = 'block';
+        } else {
+            input.type = 'password';
+            eyeOpen.style.display = 'block';
+            eyeClosed.style.display = 'none';
+        }
+    }
+    
+    // Password strength indicator
+    updatePasswordStrength(password) {
+        const strengthDiv = document.getElementById('passwordStrength');
+        const fill = document.getElementById('strengthFill');
+        const text = document.getElementById('strengthText');
+        
+        if (!password || this.authMode === 'login') {
+            strengthDiv.style.display = 'none';
+            return;
+        }
+        
+        strengthDiv.style.display = 'flex';
+        
+        let strength = 'weak';
+        let strengthLabel = '弱';
+        
+        if (password.length >= 8 && /[A-Z]/.test(password) && /[0-9]/.test(password)) {
+            strength = 'strong';
+            strengthLabel = '强';
+        } else if (password.length >= 6) {
+            strength = 'medium';
+            strengthLabel = '中';
+        }
+        
+        fill.className = 'strength-fill ' + strength;
+        text.className = 'strength-text ' + strength;
+        text.textContent = strengthLabel;
+    }
+    
+    // Helper methods
+    isValidEmail(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+    
+    showLoginError(message) {
+        const errorEl = document.getElementById('loginError');
+        const textEl = document.getElementById('loginErrorText');
+        textEl.textContent = message;
+        errorEl.style.display = 'flex';
+    }
+    
+    hideLoginError() {
+        document.getElementById('loginError').style.display = 'none';
+    }
+    
+    setLoginLoading(loading) {
+        const btn = this.elements.loginBtn;
+        const btnText = btn.querySelector('.btn-text');
+        const btnLoading = btn.querySelector('.btn-loading');
+        
+        btn.disabled = loading;
+        if (loading) {
+            btnText.style.display = 'none';
+            btnLoading.style.display = 'flex';
+        } else {
+            btnText.style.display = 'flex';
+            btnLoading.style.display = 'none';
+        }
     }
     
     updateUserUI() {
