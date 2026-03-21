@@ -387,27 +387,102 @@ class AlphaAI {
         
         this.isLoading = true;
         this.elements.sendBtn.disabled = true;
-        this.addLoadingMessage();
+        
+        // 流式响应：创建可更新的消息元素
+        const streamMsgEl = this.addMessage('', 'assistant', true);
+        let fullContent = '';
         
         try {
             const response = await fetch(this.API_BASE + '/api/chat', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (this.currentToken || 'guest') },
-                body: JSON.stringify({ model: this.selectedModel, messages: this.messages })
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'Authorization': 'Bearer ' + (this.currentToken || 'guest') 
+                },
+                body: JSON.stringify({ 
+                    model: this.selectedModel, 
+                    messages: this.messages,
+                    stream: true 
+                })
             });
-            const data = await response.json();
-            this.removeLoadingMessage();
             
-            if (response.ok) {
-                this.addMessage(data.content, 'assistant');
-                this.messages.push({ role: 'assistant', content: data.content });
-                if (data.remaining !== undefined) { this.dailyQuota = data.remaining; this.updateQuotaDisplay(); }
+            if (response.headers.get('content-type')?.includes('text/event-stream')) {
+                // 流式响应处理
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    buffer += decoder.decode(value, { stream: true });
+                    
+                    // 解析SSE数据
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6).trim();
+                            if (data === '[DONE]') continue;
+                            
+                            try {
+                                const parsed = JSON.parse(data);
+                                
+                                if (parsed.delta) {
+                                    // 流式增量更新
+                                    fullContent += parsed.delta;
+                                    this.updateStreamingMessage(streamMsgEl, fullContent);
+                                } else if (parsed.content) {
+                                    // 完整内容（最后一条）
+                                    fullContent = parsed.content;
+                                } else if (parsed.error) {
+                                    throw new Error(parsed.error);
+                                }
+                                
+                                if (parsed.remaining !== undefined) {
+                                    this.dailyQuota = parsed.remaining;
+                                    this.updateQuotaDisplay();
+                                }
+                            } catch (e) {
+                                // 忽略解析错误
+                            }
+                        }
+                    }
+                }
+                
+                // 完成：移除loading状态，更新为最终内容
+                this.updateStreamingMessage(streamMsgEl, fullContent);
+                this.messages.push({ role: 'assistant', content: fullContent });
                 this.saveConversation(message.slice(0, 50));
+                
             } else {
-                this.addMessage('错误: ' + (data.error || '请求失败'), 'error');
+                // 非流式响应（兼容）
+                const data = await response.json();
+                
+                if (response.ok) {
+                    this.addMessage(data.content, 'assistant');
+                    this.messages.push({ role: 'assistant', content: data.content });
+                    if (data.remaining !== undefined) { this.dailyQuota = data.remaining; this.updateQuotaDisplay(); }
+                    this.saveConversation(message.slice(0, 50));
+                } else {
+                    this.addMessage('错误: ' + (data.error || '请求失败'), 'error');
+                }
             }
-        } catch (e) { this.removeLoadingMessage(); this.addMessage('网络错误，请检查连接', 'error'); }
+        } catch (e) { 
+            this.updateStreamingMessage(streamMsgEl, '网络错误，请检查连接'); 
+        }
         finally { this.isLoading = false; this.elements.sendBtn.disabled = false; }
+    }
+    
+    updateStreamingMessage(el, content) {
+        if (!el) return;
+        const contentEl = el.querySelector('.message-content');
+        if (contentEl) {
+            contentEl.innerHTML = this.formatContent(content);
+        }
+        this.elements.chatContainer.scrollTop = this.elements.chatContainer.scrollHeight;
     }
     
     addMessage(content, role, isLoading = false) {
